@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.24720.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ColligoEventFinder", "ColligoEventFinder\ColligoEventFinder.csproj", "{D73EEC9E-5FD5-4CF0-AE4E-17AA6C24FF17}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ColligoEventFinder.Tests", "ColligoEventFinder.Tests\ColligoEventFinder.Tests.csproj", "{969AC0DF-5FBE-4FD8-8AE8-2D8399CECC82}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D73EEC9E-5FD5-4CF0-AE4E-17AA6C24FF17}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D73EEC9E-5FD5-4CF0-AE4E-17AA6C24FF17}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D73EEC9E-5FD5-4CF0-AE4E-17AA6C24FF17}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D73EEC9E-5FD5-4CF0-AE4E-17AA6C24FF17}.Release|Any CPU.Build.0 = Release|Any CPU
+		{969AC0DF-5FBE-4FD8-8AE8-2D8399CECC82}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{969AC0DF-5FBE-4FD8-8AE8-2D8399CECC82}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{969AC0DF-5FBE-4FD8-8AE8-2D8399CECC82}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{969AC0DF-5FBE-4FD8-8AE8-2D8399CECC82}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

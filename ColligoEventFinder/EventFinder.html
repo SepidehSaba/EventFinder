@@ -1,0 +1,289 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+    <meta charset="utf-8" />
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
+    <script src="https://code.jquery.com/jquery-1.10.2.js"></script>
+    <script src="scripts/dateformat.js"></script>
+    <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+    <script type="text/javascript" src="//code.jquery.com/jquery-2.1.1.min.js"></script>
+    <script type="text/javascript" src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/moment.js/2.9.0/moment-with-locales.js"></script>
+    <script src="//cdn.rawgit.com/Eonasdan/bootstrap-datetimepicker/e8bddc60e73c1ec2475f827be36e1957af72e2ea/src/js/bootstrap-datetimepicker.js"></script>
+    <script src="scripts/jquery.validate.js"></script>
+    <script src="scripts/additional-methods.js"></script>
+    <style type="text/css">
+        img {
+            height: auto;
+            max-width: 100%;
+            vertical-align: middle;
+        }
+
+        .error {
+            border: 1px dotted red;
+        }
+    </style>
+</head>
+<body>
+    <script>
+        $(document).ready(function () {
+            jQuery.support.cors = true;
+
+            $(function () {
+                var today = new Date();
+                var tomorrow = new Date();
+                tomorrow.setDate(today.getDate() + 1);
+
+                $('#datetimepicker6').datetimepicker({
+                    defaultDate: today,
+                    format: "DD/MM/YYYY"
+
+                });
+                $('#datetimepicker7').datetimepicker({
+                    useCurrent: false, //Important! See issue #1075
+                    defaultDate: tomorrow,
+                    format: "DD/MM/YYYY"
+                });
+                $("#datetimepicker6").on("dp.change", function (e) {
+                    $('#datetimepicker7').data("DateTimePicker").minDate(e.date);
+                });
+                $("#datetimepicker7").on("dp.change", function (e) {
+                    $('#datetimepicker6').data("DateTimePicker").maxDate(e.date);
+                });
+
+                // Setup the validation rules
+                jQuery.validator.addMethod("validDateFormat", function (value, element) {
+                    var date = value.split("/").reverse().join("-");
+                    return (new Date(date) !== "Invalid Date" && !isNaN(new Date(date))) ? true : false;
+                }, "Invalid date format.");
+
+                jQuery.validator.addMethod("greaterThan", function (value, element) {
+                    var sdate = $("#txtStartdate").val().split("/").reverse().join("-");
+                    var edate = $("#txtEnddate").val().split("/").reverse().join("-");
+                    var sd = (new Date(sdate));
+                    var ed = (new Date(edate));
+
+                    return (ed > sd);
+                }, "End Date must be greater that Sart Date.");
+
+                var form = $("#searchForm");
+
+                form.validate({
+                    // Turn off onfocusout and onkeyup validation for address since we validate it in its event handler.
+                    // For the rest of the fields, validation works as usual (i.e.: with "focous out" or "key up").
+                    onkeyup: function (element) {
+                        var element_id = jQuery(element).attr('id');
+                        var setting = this.settings.rules[element_id].onkeyup;
+                        if (typeof setting === "undefined" || setting !== false) {
+                            jQuery.validator.defaults.onkeyup.apply(this, arguments);
+                        }
+                    },
+                    rules: {
+                        "txtAddress": {
+                            onkeyup: false,
+                            remote: {
+                                url: 'http://localhost:3981/api/WebAPI/ValidateAddress',
+                                data: {
+                                    'address': function () {
+                                        return $("#txtAddress").val().replace(/\r?\n/g, " ")
+                                    }
+                                },
+                                type: 'GET',
+                                dataFilter: function (data) {
+                                    if (data != null && data != "") {
+                                        var json = JSON.parse(data);
+                                        var lat = json[0];
+                                        var lng = json[1];
+                                        $("#hdnlat").val(lat);
+                                        $("#hdnlng").val(lng);
+                                        return true;
+                                    }
+                                    else {
+                                        $("#hdnlat").val("");
+                                        $("#hdnlng").val("");
+                                        return false;
+                                    }
+                                }
+                            }
+                        },
+                        "txtKlm": {
+                            required: false,
+                            number: true,
+                            range: [0, 300]
+                        },
+                        "txtStartdate": {
+                            required: true,
+                            validDateFormat: true,
+                            greaterThan: true
+                        },
+                        "txtEnddate": {
+                            required: true,
+                            validDateFormat: true,
+                            greaterThan: true
+                        }
+                    },
+                    messages: {
+                        "txtAddress": {
+                            required: "Address is required",
+                            remote: "A valid address is required"
+                        },
+                        "txtKlm": {
+                            required: "Radius is required!",
+                            number: "Only numbers.",
+                            range: "Number between 0-300.",
+                        },
+                        "txtStartdate": {
+                            required: "Start Date is required."
+                        },
+                        "txtEnddate": {
+                            required: "End Date is required."
+                        }
+                    }
+                });
+            });
+
+            $("#btnSearch").click(function (event) {
+                event.preventDefault();
+                var form = $("#searchForm");
+                if (form.valid()) {
+                    search(1);
+                }
+            });
+
+            // Recursively loads pages of data from Eventful and append to the searh result
+            function search(pageNumber) {
+                if (pageNumber == 1) {
+                    $('#searchResult').text("");
+                }
+
+                var uri = 'http://localhost:3981/api/WebAPI/GetEvent';
+                var qdate = new Date($("#txtStartdate").val().split("/").reverse().join("-")).format("yyyymmdd") + '00' + "-" + new Date($("#txtEnddate").val().split("/").reverse().join("-")).format("yyyymmdd") + '00';
+                var query = {
+                    "pageNumber": pageNumber,
+                    "coordinates": $("#hdnlat").val() + "," + $("#hdnlng").val(),
+                    "keywords": $("#drpCategory").val(),
+                    "radius": $("#txtKlm").val(),
+                    "dates": qdate
+                };
+
+                $.getJSON(uri, query)
+                    .done(function (data) {
+                        // If nothing was found
+                        if (data.events == null || data.events.event == null) {
+                            var div = $("<div class='row'></div>");
+                            $("<div class='row'></div>").text("No event found!").appendTo(div);
+                            $('#searchResult').append(div);
+                            return;
+                        }
+
+                        // For each event found
+                        $.each(data.events.event, function (key, item) {
+                            var div = $("<div class='row'></div>");
+                            var img = $("<img />");
+                            if (item.image != null) {
+                                img.attr("src", item.image.url);
+                            }
+                            $("<div class='col-sm-4'></div>").append(img).appendTo(div);
+
+                            var titleDiv = $("<div class='row'></div>").text("Title: " + item.title);
+                            var venueDiv = $("<div class='row'></div>").text("Venue: " + item.venue_name);
+                            var teamDiv = $("<div class='row'></div>").text("Artist / Team: " + ((item.performers == null) ? '' : item.performers.performer.name));
+                            $("<div class='col-sm-4'></div>").append(titleDiv).append(venueDiv).append(teamDiv).appendTo(div);
+
+                            $("<div class='col-sm-4'></div>").text(item.start_time).appendTo(div);
+                            $('#searchResult').append(div);
+
+                            $("<div class='row'></div>").append("<hr/>").appendTo($('#searchResult'));
+                        });
+
+                        var pageCount = data.page_count;
+                        var currentPage = data.page_number;
+
+                        // Eventful result tell us how many pages of data the query has and which page we are on
+                        // If we have more pages to load, we call the search function for the next page
+                        if (currentPage < pageCount) {
+                            search(currentPage + 1);
+                        }
+                    })
+                    .fail(function (jqXHR, textStatus, err) {
+                        var div = $("<div class='row'></div>");
+                        $("<div class='row'></div>").text("Something's wrong! We can't search.").appendTo(div);
+                        $('#searchResult').append(div);
+                    });
+
+                return false;
+            }
+
+        });
+
+    </script>
+    <div id="dBody" class="container">
+        <form id="searchForm" name="searchForm">
+            <div id="dSearch">
+                <div class="container">
+                    <div class='row'>
+                        <div class='col-md-5'>
+                            <div class="form-group">
+                                <label>Address: </label> <textarea id="txtAddress" name="txtAddress" type="text" class="form-control" cols="20" rows="3" style="resize: none;"></textarea>
+                            </div>
+                        </div>
+                        <div class='col-md-5'>
+                            <div class="form-group">
+                                <label>Start Date (format: dd/mm/yyyy): </label>
+                                <div class='input-group date' id='datetimepicker6'>
+
+                                    <input type='text' class="form-control" id="txtStartdate" name="txtStartdate" />
+                                    <span class="input-group-addon">
+                                        <span class="glyphicon glyphicon-calendar"></span>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class='col-md-5'>
+                            <div class="form-group">
+                                <label>End Date (format: dd/mm/yyyy):</label>
+                                <div class='input-group date' id='datetimepicker7'>
+
+                                    <input type='text' class="form-control" id="txtEnddate" name="txtEnddate" />
+                                    <span class="input-group-addon">
+                                        <span class="glyphicon glyphicon-calendar"></span>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class='col-md-5'>
+                            <label>Radius(km):</label>
+                            <div class="">
+                                <input id="txtKlm" name="txtKlm" type="text" class="form-control" />
+
+                            </div>
+
+                        </div>
+                        <div class='col-md-5'>
+                            <label>Category:</label>
+                            <div class="form-group">
+                                <select id="drpCategory" name="drpCategory" class="form-control">
+                                    <option value="music">Music</option>
+                                    <option value="sport">Sport</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class='row'>
+                        <button type="submit" id="btnSearch" name="btnSearch" class="btn btn-default" style="float:right;">Search</button>
+                    </div>
+                </div>
+
+            </div>
+        </form>
+        <hr />
+        <div id="searchResult" style="width:100%;">
+
+        </div>
+    </div>
+    <input id="hdnlat" name="hdnlat" type="hidden" /><input id="hdnlng" name="hdnlng" type="hidden" />
+</body>
+</html>
